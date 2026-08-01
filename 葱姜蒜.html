@@ -64,12 +64,13 @@
   .sidebar-header {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     padding: 0 8px 20px;
   }
 
-  .brand { color: white; }
-  .brand-title { font-size: 22px; font-weight: 700; }
+  .brand { color: white; text-align: center; }
+  .brand-title { font-size: 28px; font-weight: 700; }
   .brand-subtitle { font-size: 12px; opacity: 0.85; margin-top: 4px; letter-spacing: 1px; }
   .brand-refresh { margin-left: auto; background: rgba(255,255,255,0.25); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
@@ -503,7 +504,7 @@
       <span class="nav-icon">💰</span><span>记账本</span>
     </div>
     <div style="margin-top:auto;padding:8px 16px;">
-      <button class="brand-refresh" onclick="location.reload(true)" title="刷新" style="width:100%;border-radius:12px;padding:10px 0;">🔄 刷新页面</button>
+      <button class="brand-refresh" onclick="location.reload(true)" title="刷新" style="width:100%;border-radius:12px;padding:10px 0;">🔄</button>
     </div>
   </aside>
 
@@ -561,7 +562,7 @@
       </div>
 
       <!-- 我的灵感 -->
-      <div class="page" id="page-inspiration" data-items='[{"icon":"🔥","label":"每日热点","type":"hot","url":"https://weibo.com/hot","title":"微博热搜"},{"icon":"💬","label":"热点网评","type":"hot","url":"https://www.zhihu.com/hot","title":"知乎热榜"},{"icon":"✨","label":"今日灵感","type":"daily","key":"inspiration"}]'>
+      <div class="page" id="page-inspiration" data-items='[{"icon":"🔥","label":"每日热点","type":"hot","url":"https://tophub.today/n/KqndgxeLl9","title":"微博热搜"},{"icon":"💬","label":"热点网评","type":"hot","url":"https://www.zhihu.com/hot","title":"知乎热榜"},{"icon":"✨","label":"今日灵感","type":"daily","key":"inspiration"}]'>
       </div>
 
       <!-- 睡前收听 -->
