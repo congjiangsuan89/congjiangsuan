@@ -671,28 +671,32 @@ function toggleItem(key, idx) {
   const item = items[idx];
   header.innerHTML = `${item.icon} ${item.label}`;
   body.style = '';
+  // 记录进度
+  if (item.progress) {
+    var now = new Date();
+    var ts = now.getTime();
+    var dateStr = now.toISOString().split('T')[0];
+    var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+    localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:item.label}));
+    // 更新卡片上的时间显示
+    var progressTag = cardEl.querySelector('div:last-child');
+    if (progressTag && progressTag.style && progressTag.style.color === 'rgb(124, 92, 191)') {
+      progressTag.innerText = '上次：今天 ' + timeStr;
+    }
+  }
   if (item.type === 'app') {
     window.open(item.url, '_blank');
     body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;flex-direction:column;gap:12px;">已尝试打开 App/浏览器<br><button class="note-save-btn" onclick="window.open('${item.url}','_blank')">重新打开</button></div>`;
   } else if (item.type === 'link') {
-    var extBtn = '<button onclick="window.open(\''+item.url+'\',\'_blank\')" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:4px 14px;font-size:12px;cursor:pointer;">📱 在App/浏览器中打开</button>';
+    var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 在App/浏览器中打开</a>';
     header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
-    body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>';
-    // 记录学习时间
-    if (item.progress) {
-      var now = new Date();
-      var ts = now.getTime();
-      var dateStr = now.toISOString().split('T')[0];
-      var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
-      localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:item.label}));
-    }
-  } else if (item.type === 'audio') {
+    body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>'; else if (item.type === 'audio') {
     // 音频类：直接跳转 App/浏览器播放
     var openUrl = item.url;
     // 尝试打开 App
     window.open(openUrl, '_blank');
     header.innerHTML = item.icon + ' ' + item.label;
-    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:48px;">'+item.icon+'</div><div style="font-size:18px;font-weight:700;color:var(--text-dark);">'+item.label+'</div><div style="color:var(--text-muted);font-size:14px;">已尝试跳转播放<br>如果App没有自动打开，请点击下方按钮</div><button class="note-save-btn" onclick="window.open(\''+item.url+'\',\'_blank\')">📱 打开播放</button></div>';
+    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:48px;">'+item.icon+'</div><div style="font-size:18px;font-weight:700;color:var(--text-dark);">'+item.label+'</div><div style="color:var(--text-muted);font-size:14px;">已尝试跳转播放<br>如果App没有自动打开，请点击下方按钮</div><a href="'+item.url+'" target="_blank" class="note-save-btn" style="display:inline-block;text-decoration:none;text-align:center;">📱 打开播放</a></div>';
     // 记录收听时间
     if (item.progress) {
       var now2 = new Date();
@@ -704,9 +708,9 @@ function toggleItem(key, idx) {
   } else if (item.type === 'hot') {
     var hotTitle = item.title || '外部页面';
     var hotBtnText = hotTitle.indexOf('微博') !== -1 ? '打开微博热搜' : '打开'+hotTitle;
-    var extBtn2 = '<button onclick="window.open(\''+item.url+'\',\'_blank\')" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:4px 14px;font-size:12px;cursor:pointer;">📱 '+hotBtnText+'</button>';
+    var extBtn2 = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;">📱 '+hotBtnText+'</a>';
     header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn2;
-    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:48px;">'+item.icon+'</div><div style="font-size:18px;font-weight:700;color:var(--text-dark);">'+hotTitle+'</div><div style="color:var(--text-muted);font-size:14px;">该页面不支持在工作台内预览<br>点击右上角按钮或下方按钮打开</div><button class="note-save-btn" onclick="window.open(\''+item.url+'\',\'_blank\')">'+hotBtnText+'</button></div>';
+    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:48px;">'+item.icon+'</div><div style="font-size:18px;font-weight:700;color:var(--text-dark);">'+hotTitle+'</div><div style="color:var(--text-muted);font-size:14px;">该页面不支持在工作台内预览<br>点击右上角按钮或下方按钮打开</div><a href="'+item.url+'" target="_blank" class="note-save-btn" style="display:inline-block;text-decoration:none;text-align:center;">'+hotBtnText+'</a></div>';
   } else if (item.type === 'iframe') {
     body.innerHTML = `<iframe src="${item.url}" allow="clipboard-write; encrypted-media"></iframe>`;
   } else if (item.type === 'note') {
@@ -720,6 +724,15 @@ function toggleItem(key, idx) {
     renderDailyPanel(body, item.key);
   }
   panel.classList.add('open');
+}
+
+function recordLinkProgress(progressKey, label) {
+  if (!progressKey) return;
+  var now = new Date();
+  var ts = now.getTime();
+  var dateStr = now.toISOString().split('T')[0];
+  var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+  localStorage.setItem('cjs_' + progressKey, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:label}));
 }
 
 // ===== 待办（按日期存储）=====
