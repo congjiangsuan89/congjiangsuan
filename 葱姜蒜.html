@@ -690,7 +690,8 @@ function toggleItem(key, idx) {
   } else if (item.type === 'link') {
     var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 在App/浏览器中打开</a>';
     header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
-    body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>'; else if (item.type === 'audio') {
+    body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>';
+  } else if (item.type === 'audio') {
     // 音频类：直接跳转 App/浏览器播放
     var openUrl = item.url;
     // 尝试打开 App
