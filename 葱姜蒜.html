@@ -884,7 +884,7 @@ function drawWeightChart() {
 // ===== 今日饮食 =====
 var FOOD_DB = {
   '米饭':116,'馒头':223,'面条':110,'包子':227,'饺子':240,'油条':388,'面包':312,'小米粥':46,'玉米':112,'红薯':86,'土豆':81,'燕麦':377,'全麦面包':246,'烧饼':326,'煎饼':336,'花卷':211,'粽子':180,'年糕':154,
-  '猪肉':395,'猪瘦肉':143,'五花肉':395,'排骨':264,'猪肝':129,'猪蹄':260,'牛肉':125,'牛腱子':123,'羊肉':203,'鸡肉':167,'鸡胸肉':133,'鸡腿':181,'鸭肉':240,'鸡翅':194,'培根':541,'香肠':508,'火腿':330,'腊肉':498,
+  '猪肉':395,'猪瘦肉':143,'五花肉':395,'排骨':264,'猪肝':129,'猪蹄':260,'松板肉':358,'梅花肉':348,'里脊':155,'里脊肉':155,'牛肉':125,'牛腱子':123,'羊肉':203,'鸡肉':167,'鸡胸肉':133,'鸡腿':181,'鸭肉':240,'鸡翅':194,'培根':541,'香肠':508,'火腿':330,'腊肉':498,
   '鸡蛋':144,'蛋清':48,'蛋黄':328,'鹌鹑蛋':160,'牛奶':54,'酸奶':72,'奶酪':328,'豆浆':14,'豆腐':82,'豆腐皮':409,'豆腐干':140,
   '鱼':104,'三文鱼':208,'虾':93,'蟹':95,'鱿鱼':75,'带鱼':127,'黄花鱼':97,'鳕鱼':88,'生蚝':56,'蛤蜊':56,'海参':78,
   '西红柿':19,'黄瓜':15,'白菜':13,'菠菜':24,'芹菜':12,'西兰花':36,'胡萝卜':37,'茄子':21,'豆芽':18,'青椒':23,'洋葱':40,'南瓜':22,'冬瓜':11,'莲藕':73,'山药':57,'竹笋':19,'生菜':13,'油菜':11,'韭菜':26,'香菜':31,'蘑菇':24,'木耳':27,'海带':12,'紫菜':250,
@@ -897,10 +897,25 @@ var FOOD_DB = {
 function getDietData() { return JSON.parse(localStorage.getItem('cjs_diet') || '{}'); }
 function saveDietData(data) { localStorage.setItem('cjs_diet', JSON.stringify(data)); }
 
+function normalizeFoodName(name) {
+  return name.replace(/[烤煎炒炸蒸煮炖卤拌焖焗]/g, '').replace(/^(一份|一个|一碗|一杯|盘|碗|片|块|根|只)\s*/, '').trim();
+}
+
 function findFoodCal(name) {
-  if (FOOD_DB[name]) return FOOD_DB[name];
-  for (var k in FOOD_DB) { if (k.indexOf(name) !== -1 || name.indexOf(k) !== -1) return FOOD_DB[k]; }
-  return 0;
+  name = name.trim();
+  if (!name) return {cal:0, matched:''};
+  if (FOOD_DB[name]) return {cal:FOOD_DB[name], matched:name};
+  for (var k in FOOD_DB) {
+    if (k.indexOf(name) !== -1 || name.indexOf(k) !== -1) return {cal:FOOD_DB[k], matched:k};
+  }
+  var simple = normalizeFoodName(name);
+  if (simple && simple !== name) {
+    if (FOOD_DB[simple]) return {cal:FOOD_DB[simple], matched:simple};
+    for (var k2 in FOOD_DB) {
+      if (k2.indexOf(simple) !== -1 || simple.indexOf(k2) !== -1) return {cal:FOOD_DB[k2], matched:k2};
+    }
+  }
+  return {cal:0, matched:''};
 }
 
 function mealCal(items) { return (items||[]).reduce(function(s,f){ return s + (f.cal||0); }, 0); }
@@ -915,8 +930,9 @@ function renderDietPanel(body) {
   function mealSection(meal, label, emoji) {
     var items = todayData[meal] || [];
     var rows = items.map(function(f,i){
+      var matchedTag = f.matched && f.matched !== f.name ? '<span style="font-size:11px;color:#999;margin-left:4px;">('+escapeHtml(f.matched)+')</span>' : '';
       return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:14px;border-bottom:1px solid #f0e8f5;background:#fdfbff;border-radius:8px;margin-bottom:4px;">'+
-        '<span style="flex:1;">'+escapeHtml(f.name)+'</span>'+
+        '<span style="flex:1;">'+escapeHtml(f.name)+matchedTag+'</span>'+
         '<span style="width:50px;text-align:right;color:var(--text-muted);font-size:13px;">'+f.gram+'g</span>'+
         '<span style="width:60px;text-align:right;font-weight:600;color:var(--accent);">'+f.cal+'千卡</span>'+
         '<button style="background:none;border:none;color:#c4aee8;cursor:pointer;font-size:16px;padding:0 4px;" onclick="delDietFood(\''+meal+'\','+i+')">−</button>'+
@@ -972,12 +988,21 @@ function addDietFood(meal) {
   var name = nameEl.value.trim();
   var gram = parseFloat(gramEl.value);
   if (!name || isNaN(gram) || gram <= 0) return;
-  var calPer100 = findFoodCal(name);
+  var found = findFoodCal(name);
+  var calPer100 = found.cal;
+  var matchedName = found.matched;
+  if (calPer100 <= 0) {
+    var manual = prompt('未找到 "'+name+'" 的热量数据，请手动输入每100克多少千卡（例如：猪肉约395）：');
+    if (!manual) return;
+    calPer100 = parseFloat(manual);
+    if (isNaN(calPer100) || calPer100 <= 0) return;
+    matchedName = name;
+  }
   var cal = Math.round(calPer100 * gram / 100);
   var today = new Date().toISOString().split('T')[0];
   var allData = getDietData();
   if (!allData[today]) allData[today] = { breakfast: [], lunch: [], dinner: [] };
-  allData[today][meal].push({ name: name, gram: gram, cal: cal });
+  allData[today][meal].push({ name: name, gram: gram, cal: cal, matched: matchedName });
   saveDietData(allData);
   nameEl.value = ''; gramEl.value = '';
   var body = document.querySelector('#detail-body');
