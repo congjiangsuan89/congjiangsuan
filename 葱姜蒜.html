@@ -566,7 +566,7 @@
       </div>
 
       <!-- 睡前收听 -->
-      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/5596926?share_code=TGXoqWeCczyb","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://www.xiaoyuzhoufm.com/explore","progress":"bedtime_xiaoyuzhou"}]'>
+      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"app","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"app","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"app","url":"https://www.zhihu.com/podcast/morning-call/5596926?share_code=TGXoqWeCczyb","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"app","url":"https://www.xiaoyuzhoufm.com/explore","progress":"bedtime_xiaoyuzhou"}]'>
       </div>
 
       <!-- 身体管理 -->
@@ -685,8 +685,17 @@ function toggleItem(key, idx) {
     }
   }
   if (item.type === 'app') {
-    window.open(item.url, '_blank');
-    body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;flex-direction:column;gap:12px;">已尝试打开 App/浏览器<br><button class="note-save-btn" onclick="window.open('${item.url}','_blank')">重新打开</button></div>`;
+    // 记录进度
+    if (item.progress) {
+      var now = new Date();
+      var ts = now.getTime();
+      var dateStr = now.toISOString().split('T')[0];
+      var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+      localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:item.label}));
+    }
+    // 直接离开PWA，用系统浏览器/Safari打开，Universal Link可自动跳转App
+    window.location.href = item.url;
+    body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;flex-direction:column;gap:12px;">正在离开工作台打开...<br><a href="'+item.url+'" style="color:var(--accent);text-decoration:none;">没反应？点击这里</a></div>';
   } else if (item.type === 'link') {
     var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 在App/浏览器中打开</a>';
     header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
