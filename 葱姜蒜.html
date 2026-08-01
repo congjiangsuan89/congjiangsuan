@@ -538,7 +538,7 @@
       </div>
 
       <!-- 学英语 -->
-      <div class="page" id="page-english" data-items='[{"icon":"📺","label":"正在进行","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=7d36e11c-36e7-11e7-82c4-902b346f2ac5"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/"}]'>
+      <div class="page" id="page-english" data-items='[{"icon":"📺","label":"正在进行","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=7d36e11c-36e7-11e7-82c4-902b346f2ac5","progress":"english_progress_ongoing"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b","progress":"english_progress_6min"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/","progress":"english_progress_chinadaily"}]'>
       </div>
 
       <!-- 读书笔记 -->
@@ -638,7 +638,18 @@ function switchMenu(menuId, el) {
   html += `<div class="page-layout">`;
   html += `<div class="sub-col">`;
   items.forEach((item, i) => {
-    html += `<div class="sub-card" id="card-${key}-${i}" onclick="toggleItem('${key}', ${i})"><span class="card-icon">${item.icon}</span><span class="card-label">${item.label}</span></div>`;
+    // 显示学习进度
+    var progressTag = '';
+    if (item.progress) {
+      var saved = null;
+      try { saved = JSON.parse(localStorage.getItem('cjs_' + item.progress) || 'null'); } catch(e){}
+      if (saved && saved.date) {
+        var today = new Date().toISOString().split('T')[0];
+        var dayLabel = saved.date === today ? '今天 ' + saved.timeStr : saved.date.slice(5) + ' ' + saved.timeStr;
+        progressTag = '<div style="font-size:9px;color:#7c5cbf;margin-top:2px;opacity:0.7;">上次：'+dayLabel+'</div>';
+      }
+    }
+    html += `<div class="sub-card" id="card-${key}-${i}" onclick="toggleItem('${key}', ${i})"><span class="card-icon">${item.icon}</span><span class="card-label">${item.label}</span>${progressTag}</div>`;
   });
   html += `</div>`;
   html += `<div class="detail-col"><div class="detail-panel open" id="detail-${key}"><div class="detail-header">👆 点击左侧子项</div><div class="detail-body" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;">选择一项查看内容</div></div></div>`;
@@ -665,6 +676,14 @@ function toggleItem(key, idx) {
     var extBtn = '<button onclick="window.open(\''+item.url+'\',\'_blank\')" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:4px 14px;font-size:12px;cursor:pointer;">📱 在App/浏览器中打开</button>';
     header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
     body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>';
+    // 记录学习时间
+    if (item.progress) {
+      var now = new Date();
+      var ts = now.getTime();
+      var dateStr = now.toISOString().split('T')[0];
+      var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+      localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:item.label}));
+    }
   } else if (item.type === 'hot') {
     var hotTitle = item.title || '外部页面';
     var hotBtnText = hotTitle.indexOf('微博') !== -1 ? '打开微博热搜' : '打开'+hotTitle;
