@@ -566,7 +566,7 @@
       </div>
 
       <!-- 睡前收听 -->
-      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🚀","label":"小宇宙播客","type":"link","url":"https://www.xiaoyuzhoufm.com/explore","progress":"bedtime_xiaoyuzhou"}]'>
+      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"audio","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"audio","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"audio","url":"https://www.zhihu.com/podcast/morning-call/5596926?share_code=TGXoqWeCczyb","progress":"bedtime_morningcall"}]'>
       </div>
 
       <!-- 身体管理 -->
@@ -685,6 +685,21 @@ function toggleItem(key, idx) {
       var dateStr = now.toISOString().split('T')[0];
       var timeStr = now.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
       localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts, date:dateStr, timeStr:timeStr, label:item.label}));
+    }
+  } else if (item.type === 'audio') {
+    // 音频类：直接跳转 App/浏览器播放
+    var openUrl = item.url;
+    // 尝试打开 App
+    window.open(openUrl, '_blank');
+    header.innerHTML = item.icon + ' ' + item.label;
+    body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:48px;">'+item.icon+'</div><div style="font-size:18px;font-weight:700;color:var(--text-dark);">'+item.label+'</div><div style="color:var(--text-muted);font-size:14px;">已尝试跳转播放<br>如果App没有自动打开，请点击下方按钮</div><button class="note-save-btn" onclick="window.open(\''+item.url+'\',\'_blank\')">📱 打开播放</button></div>';
+    // 记录收听时间
+    if (item.progress) {
+      var now2 = new Date();
+      var ts2 = now2.getTime();
+      var dateStr2 = now2.toISOString().split('T')[0];
+      var timeStr2 = now2.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+      localStorage.setItem('cjs_' + item.progress, JSON.stringify({time:ts2, date:dateStr2, timeStr:timeStr2, label:item.label}));
     }
   } else if (item.type === 'hot') {
     var hotTitle = item.title || '外部页面';
