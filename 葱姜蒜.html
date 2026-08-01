@@ -183,7 +183,27 @@
     color: var(--text-muted);
     font-weight: 600;
     flex-shrink: 0;
+    position: relative;
   }
+
+  .detail-close {
+    margin-left: auto;
+    background: rgba(124,92,191,0.1);
+    border: none;
+    color: var(--accent);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .detail-close:active { background: rgba(124,92,191,0.2); }
 
   .detail-body {
     flex: 1;
@@ -456,6 +476,7 @@
     .sub-card .card-label { font-size: 10px; }
     .detail-panel iframe { min-height: 300px; }
     .detail-header { font-size: 13px; padding: 10px 12px; }
+    .detail-close { width: 24px; height: 24px; font-size: 16px; }
     .detail-panel .local-wrap { padding: 12px; }
     .note-textarea { min-height: 200px; padding: 12px; font-size: 13px; }
     .note-save-btn { padding: 8px 16px; font-size: 12px; }
@@ -566,7 +587,7 @@
       </div>
 
       <!-- 睡前收听 -->
-      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/5596926?share_code=TGXoqWeCczyb","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://www.xiaoyuzhoufm.com/","progress":"bedtime_xiaoyuzhou"}]'>
+      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/5596926?share_code=TGXoqWeCczyb","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://xyzrank.top/","progress":"bedtime_xiaoyuzhou"}]'>
       </div>
 
       <!-- 身体管理 -->
@@ -654,7 +675,7 @@ function switchMenu(menuId, el) {
     html += `<div class="sub-card" id="card-${key}-${i}" onclick="toggleItem('${key}', ${i})"><span class="card-icon">${item.icon}</span><span class="card-label">${item.label}</span>${progressTag}</div>`;
   });
   html += `</div>`;
-  html += `<div class="detail-col"><div class="detail-panel open" id="detail-${key}"><div class="detail-header">👆 点击左侧子项</div><div class="detail-body" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;">选择一项查看内容</div></div></div>`;
+  html += `<div class="detail-col"><div class="detail-panel open" id="detail-${key}"><div class="detail-header"><span>👆 点击左侧子项</span><button class="detail-close" onclick="closeDetail('${key}')" aria-label="关闭">×</button></div><div class="detail-body" style="display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:14px;">选择一项查看内容</div></div></div>`;
   html += `</div>`;
   pageEl.innerHTML = html;
 }
@@ -697,9 +718,22 @@ function toggleItem(key, idx) {
     window.location.href = item.url;
     body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;flex-direction:column;gap:12px;">正在离开工作台打开...<br><a href="'+item.url+'" style="color:var(--accent);text-decoration:none;">没反应？点击这里</a></div>';
   } else if (item.type === 'link') {
-    var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 在App/浏览器中打开</a>';
-    header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
-    body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>';
+    // 睡前收听：音频类平台（小宇宙、知乎播客）通常禁止 iframe 且需 App 播放，使用卡片式预览
+    if (key === 'bedtime') {
+      var bedtimeDesc = {
+        '岩中花述': 'JustPod 出品，由张之琪与麻吉星主持的女性谈话节目。',
+        '鲁豫慢谈': '鲁豫在 B 站的个人频道，分享访谈与生活感悟。',
+        '知乎Morning Call': '知乎日报音频版，每日热点话题晨报。',
+        '小宇宙推荐': '中文播客排行榜，按订阅数展示当前最热门的小宇宙播客，每日更新。'
+      }[item.label] || '睡前音频内容，建议在对应 App 中收听。';
+      var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 打开收听</a>';
+      header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
+      body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:30px;text-align:center;gap:16px;"><div style="font-size:56px;">'+item.icon+'</div><div style="font-size:20px;font-weight:700;color:var(--text-dark);">'+item.label+'</div><div style="color:var(--text-muted);font-size:14px;line-height:1.6;max-width:360px;">'+bedtimeDesc+'</div><div style="font-size:12px;color:#999;">iPhone 主屏幕版会跳转到 Safari/App 打开，收听后可重新点击桌面图标返回工作台。</div><a href="'+item.url+'" target="_blank" class="note-save-btn" style="display:inline-block;text-decoration:none;text-align:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 打开收听</a></div>';
+    } else {
+      var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 在App/浏览器中打开</a>';
+      header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
+      body.innerHTML = '<iframe src="'+item.url+'" allow="clipboard-write; encrypted-media"></iframe>';
+    }
   } else if (item.type === 'audio') {
     // 音频类：直接跳转 App/浏览器播放
     var openUrl = item.url;
@@ -734,6 +768,20 @@ function toggleItem(key, idx) {
     renderDailyPanel(body, item.key);
   }
   panel.classList.add('open');
+}
+
+function closeDetail(key) {
+  const panel = document.getElementById('detail-' + key);
+  if (!panel) return;
+  const header = panel.querySelector('.detail-header');
+  const body = panel.querySelector('.detail-body');
+  panel.classList.remove('open');
+  // 恢复默认提示
+  if (header) header.innerHTML = '<span>👆 点击左侧子项</span><button class="detail-close" onclick="closeDetail(\''+key+'\')" aria-label="关闭">×</button>';
+  if (body) body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:14px;">选择一项查看内容</div>';
+  // 取消卡片高亮
+  const pageEl = document.getElementById('page-' + key);
+  if (pageEl) pageEl.querySelectorAll('.sub-card').forEach(c => c.classList.remove('active'));
 }
 
 function recordLinkProgress(progressKey, label) {
