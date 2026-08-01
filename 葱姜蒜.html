@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="葱姜蒜">
 <meta name="theme-color" content="#d8c8f0">
 <link rel="apple-touch-icon-precomposed" href="/appicon.png">
@@ -36,11 +36,16 @@
     color: var(--text-dark);
     height: 100vh;
     overflow: hidden;
-    padding-top: env(safe-area-inset-top);
+    padding-top: 0;
     -webkit-text-size-adjust: 100%;
   }
 
-  .app { display: flex; height: calc(100vh - env(safe-area-inset-top)); width: 100%; min-width: 320px; }
+  /* iOS 状态栏安全区 - 处理灵动岛和刘海 */
+  @supports (padding-top: env(safe-area-inset-top)) {
+    body { padding-top: env(safe-area-inset-top); }
+  }
+
+  .app { display: flex; height: 100vh; width: 100%; min-width: 320px; }
 
   /* ===== 左侧菜单 ===== */
   .sidebar {
@@ -431,8 +436,8 @@
   .weight-empty { color: var(--text-muted); text-align: center; padding: 30px 0; font-size: 14px; }
 
   @media (max-width: 768px) {
-    body { padding-top: env(safe-area-inset-top); }
-    .app { flex-direction: row; min-width: 100%; height: calc(100vh - env(safe-area-inset-top)); }
+    body { touch-action: manipulation; }
+    .app { flex-direction: row; min-width: 100%; }
     .sidebar { width: 110px; min-width: 110px; padding: 12px 8px; gap: 4px; }
     .sidebar-header { padding: 0 4px 12px; }
     .brand-title { font-size: 14px; }
@@ -578,23 +583,26 @@
 </div>
 
 <script>
-// 缩放后自动复位，避免页面被捏合后变形无法恢复
+// 缩放后自动复位
 (function(){
-  function resetViewport() {
-    var viewport = document.querySelector('meta[name=viewport]');
-    if (viewport) {
-      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
-    }
-    document.body.style.transform = 'none';
-    document.body.style.webkitTransform = 'none';
+  var timer;
+  var vp = document.querySelector('meta[name=viewport]');
+  if (!vp) {
+    vp = document.createElement('meta');
+    vp.name = 'viewport';
+    document.head.appendChild(vp);
   }
-  var resetTimer;
-  function scheduleReset() {
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(resetViewport, 300);
+  vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+  function reset() {
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      document.body.style.zoom = '';
+      document.body.style.transform = '';
+    }, 400);
   }
-  window.addEventListener('resize', scheduleReset);
-  window.addEventListener('orientationchange', function(){ setTimeout(resetViewport, 100); });
+  window.addEventListener('resize', reset);
+  window.addEventListener('orientationchange', function(){ setTimeout(reset, 100); });
 })();
 
 let currentMenu = 'todo';
