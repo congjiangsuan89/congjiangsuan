@@ -10,6 +10,7 @@
 <link rel="apple-touch-icon-precomposed" href="/appicon.png">
 <link rel="apple-touch-icon" href="/appicon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/appicon.png">
+<script src="boohee_foods.js"></script>
 <link rel="apple-touch-icon" sizes="167x167" href="/homeicon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/launchicon.png">
 <link rel="manifest" href="/congjiangsuan/manifest.json">
@@ -919,21 +920,37 @@ function getDietData() { return JSON.parse(localStorage.getItem('cjs_diet') || '
 function saveDietData(data) { localStorage.setItem('cjs_diet', JSON.stringify(data)); }
 
 function normalizeFoodName(name) {
-  return name.replace(/[烤煎炒炸蒸煮炖卤拌焖焗]/g, '').replace(/^(一份|一个|一碗|一杯|盘|碗|片|块|根|只)\s*/, '').trim();
+  return name.replace(/[烤煎炒炸蒸煮炖卤拌焖焗红烧清炖干锅蒜蓉蚝油]/g, '').replace(/^(一份|一个|一碗|一杯|盘|碗|片|块|根|只)\s*/, '').trim();
 }
 
 function findFoodCal(name) {
   name = name.trim();
   if (!name) return {cal:0, matched:''};
+  // 1. 精确匹配内置数据库
   if (FOOD_DB[name]) return {cal:FOOD_DB[name], matched:name};
+  // 2. 模糊匹配内置数据库
   for (var k in FOOD_DB) {
     if (k.indexOf(name) !== -1 || name.indexOf(k) !== -1) return {cal:FOOD_DB[k], matched:k};
   }
+  // 3. 去烹饪词再试内置数据库
   var simple = normalizeFoodName(name);
   if (simple && simple !== name) {
     if (FOOD_DB[simple]) return {cal:FOOD_DB[simple], matched:simple};
     for (var k2 in FOOD_DB) {
       if (k2.indexOf(simple) !== -1 || simple.indexOf(k2) !== -1) return {cal:FOOD_DB[k2], matched:k2};
+    }
+  }
+  // 4. 查薄荷大数据库 (8,000+ 条)
+  if (typeof BOOHEE_FOOD_DB !== 'undefined') {
+    if (BOOHEE_FOOD_DB[name]) return {cal:BOOHEE_FOOD_DB[name], matched:name};
+    for (var bk in BOOHEE_FOOD_DB) {
+      if (bk.indexOf(name) !== -1 || name.indexOf(bk) !== -1) return {cal:BOOHEE_FOOD_DB[bk], matched:bk};
+    }
+    if (simple && simple !== name) {
+      if (BOOHEE_FOOD_DB[simple]) return {cal:BOOHEE_FOOD_DB[simple], matched:simple};
+      for (var bk2 in BOOHEE_FOOD_DB) {
+        if (bk2.indexOf(simple) !== -1 || simple.indexOf(bk2) !== -1) return {cal:BOOHEE_FOOD_DB[bk2], matched:bk2};
+      }
     }
   }
   return {cal:0, matched:''};
@@ -995,11 +1012,53 @@ function renderDietPanel(body) {
       '<div style="font-size:16px;font-weight:700;">📅 '+today+'</div>'+
       '<div style="font-size:20px;font-weight:700;color:var(--accent);">总计 '+totalCal+' 千卡</div>'+
     '</div>'+
+    '<div style="margin-bottom:14px;display:flex;gap:6px;">'+
+      '<input type="text" id="boohee_search" placeholder="🔍 搜索薄荷食物库（8000+种食物热量）" style="flex:1;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:8px 12px;font-size:13px;outline:none;" oninput="searchBooheeFood()" onfocus="searchBooheeFood()">'+
+      '<button style="background:var(--accent);color:#fff;border:none;border-radius:12px;padding:8px 14px;font-size:12px;cursor:pointer;" onclick="document.getElementById(\'boohee_search\').value=\'\';document.getElementById(\'boohee_results\').innerHTML=\'\'">✕</button>'+
+    '</div>'+
+    '<div id="boohee_results" style="max-height:200px;overflow-y:auto;margin-bottom:12px;font-size:12px;"></div>'+
     mealSection('breakfast','早餐','🌅')+
     mealSection('lunch','午餐','☀️')+
     mealSection('dinner','晚餐','🌙')+
     historyHtml+
   '</div>';
+}
+
+function searchBooheeFood() {
+  var q = (document.getElementById('boohee_search')||{}).value || '';
+  var resDiv = document.getElementById('boohee_results');
+  if (!resDiv) return;
+  if (!q || q.length < 1) { resDiv.innerHTML = ''; return; }
+  if (typeof BOOHEE_FOOD_DB === 'undefined') { resDiv.innerHTML = '<div style="color:#999;padding:8px;">薄荷食物库加载中...</div>'; return; }
+  var results = [];
+  for (var k in BOOHEE_FOOD_DB) {
+    if (k.indexOf(q) !== -1) results.push({name:k, cal:BOOHEE_FOOD_DB[k]});
+    if (results.length >= 30) break;
+  }
+  if (!results.length) {
+    resDiv.innerHTML = '<div style="color:#999;padding:8px;">未找到包含"'+escapeHtml(q)+'"的食物，试试其他关键词</div>';
+    return;
+  }
+  resDiv.innerHTML = results.map(function(r){
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid #f0e8f5;cursor:pointer;border-radius:6px;" onclick="fillFoodName(\''+escapeHtml(r.name).replace(/'/g,"\\'")+'\')" onmouseover="this.style.background=\'#f5effb\'" onmouseout="this.style.background=\'\'">'+
+      '<span>'+escapeHtml(r.name)+'</span>'+
+      '<span style="color:var(--accent);font-weight:600;">'+r.cal+'千卡/100g</span>'+
+    '</div>';
+  }).join('');
+}
+
+function fillFoodName(name) {
+  // 找到当前聚焦的输入框，或者第一个空的
+  var inputs = document.querySelectorAll('input[id^="food_"]');
+  for (var i=0; i<inputs.length; i++) {
+    if (document.activeElement === inputs[i] || !inputs[i].value) {
+      inputs[i].value = name;
+      inputs[i].focus();
+      break;
+    }
+  }
+  document.getElementById('boohee_results').innerHTML = '';
+  document.getElementById('boohee_search').value = '';
 }
 
 function addDietFood(meal) {
