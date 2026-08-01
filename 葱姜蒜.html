@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="葱姜蒜">
@@ -36,11 +36,11 @@
     color: var(--text-dark);
     height: 100vh;
     overflow: hidden;
-    touch-action: pan-y;
+    padding-top: env(safe-area-inset-top);
     -webkit-text-size-adjust: 100%;
   }
 
-  .app { display: flex; height: 100vh; width: 100%; min-width: 320px; }
+  .app { display: flex; height: calc(100vh - env(safe-area-inset-top)); width: 100%; min-width: 320px; }
 
   /* ===== 左侧菜单 ===== */
   .sidebar {
@@ -431,8 +431,8 @@
   .weight-empty { color: var(--text-muted); text-align: center; padding: 30px 0; font-size: 14px; }
 
   @media (max-width: 768px) {
-    body { touch-action: pan-y; }
-    .app { flex-direction: row; min-width: 100%; }
+    body { padding-top: env(safe-area-inset-top); }
+    .app { flex-direction: row; min-width: 100%; height: calc(100vh - env(safe-area-inset-top)); }
     .sidebar { width: 110px; min-width: 110px; padding: 12px 8px; gap: 4px; }
     .sidebar-header { padding: 0 4px 12px; }
     .brand-title { font-size: 14px; }
@@ -578,32 +578,23 @@
 </div>
 
 <script>
-// 禁用iOS双指缩放和双击缩放，防止页面被捏合变形
+// 缩放后自动复位，避免页面被捏合后变形无法恢复
 (function(){
-  var lastTouchEnd = 0;
-  document.addEventListener('touchstart', function(e){
-    if (e.touches.length > 1) { e.preventDefault(); }
-  }, {passive: false});
-  document.addEventListener('touchend', function(e){
-    var now = Date.now();
-    if (now - lastTouchEnd <= 300) { e.preventDefault(); }
-    lastTouchEnd = now;
-  }, false);
-  document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
-  document.addEventListener('gesturechange', function(e){ e.preventDefault(); });
-  document.addEventListener('gestureend', function(e){ e.preventDefault(); });
-  // 强制复位viewport scale
   function resetViewport() {
     var viewport = document.querySelector('meta[name=viewport]');
     if (viewport) {
-      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover');
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
     }
     document.body.style.transform = 'none';
     document.body.style.webkitTransform = 'none';
   }
-  window.addEventListener('resize', resetViewport);
-  window.addEventListener('orientationchange', resetViewport);
-  window.addEventListener('scroll', resetViewport);
+  var resetTimer;
+  function scheduleReset() {
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(resetViewport, 300);
+  }
+  window.addEventListener('resize', scheduleReset);
+  window.addEventListener('orientationchange', function(){ setTimeout(resetViewport, 100); });
 })();
 
 let currentMenu = 'todo';
