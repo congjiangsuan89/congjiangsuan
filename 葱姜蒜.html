@@ -922,7 +922,7 @@ function renderWeightPanel(body) {
     <div class="local-wrap">
       <div class="weight-row">
         <input type="date" id="weightDate" value="${today}" max="${today}">
-        <input type="number" id="weightVal" placeholder="体重(kg)" step="0.1" min="30" max="300">
+        <input type="number" id="weightVal" placeholder="体重(斤)" step="0.1" min="30" max="600">
         <button class="send-btn" onclick="addWeight()">记录</button>
       </div>
       ${data.length === 0 ? '<div class="weight-empty">还没有体重记录，开始记录吧 ⚡</div>' : `
@@ -930,7 +930,7 @@ function renderWeightPanel(body) {
           <canvas id="weightChart"></canvas>
         </div>
         <table class="weight-table">
-          <thead><tr><th>日期</th><th>体重(kg)</th><th class="del-col"></th></tr></thead>
+          <thead><tr><th>日期</th><th>体重(斤)</th><th class="del-col"></th></tr></thead>
           <tbody>
             ${data.map((d,i) => `<tr><td>${d.date}</td><td>${d.w}</td><td class="del-col"><button class="del-btn" onclick="delWeight(${i})">×</button></td></tr>`).join('')}
           </tbody>
@@ -978,8 +978,8 @@ function drawWeightChart() {
   ctx.scale(dpr, dpr);
 
   const vals = data.map(d => d.w);
-  const min = Math.floor(Math.min(...vals) - 2);
-  const max = Math.ceil(Math.max(...vals) + 2);
+  const min = Math.floor(Math.min(...vals) - 5);
+  const max = Math.ceil(Math.max(...vals) + 5);
   const pad = { top: 20, right: 20, bottom: 40, left: 50 };
   const pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
 
