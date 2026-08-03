@@ -1586,99 +1586,61 @@ function fetchStockData() {
     return;
   }
   var codes = stocks.join(',');
-  var script = document.createElement('script');
-  script.src = 'https://qt.gtimg.cn/q=' + codes + '&t=' + Date.now();
-  script.charset = 'GBK';
-  script.onload = function() {
-    var html = '';
-    var updateTime = '';
-    stocks.forEach(function(code) {
-      try {
-        var raw = window['v_' + code];
-        if (!raw) return;
-        // GBK编码在非GBK环境可能乱码，但数字字段可用
-        var fields = raw.split('~');
+  var listEl = document.getElementById('stockList');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">正在获取行情...</div>';
+
+  fetch('https://qt.gtimg.cn/q=' + codes)
+    .then(function(response) { return response.arrayBuffer(); })
+    .then(function(buffer) {
+      // 用 GBK 解码
+      var text = new TextDecoder('GBK').decode(buffer);
+      var html = '';
+      var updateTime = '';
+      stocks.forEach(function(code) {
+        var match = text.match(new RegExp('v_' + code + '="([^"]*)"'));
+        if (!match) return;
+        var fields = match[1].split('~');
+        if (fields.length < 35) return;
         var name = fields[1] || code;
         var lastPrice = parseFloat(fields[3]) || 0;
-        var prevClose = parseFloat(fields[4]) || 0;
         var change = parseFloat(fields[31]) || 0;
         var changePct = parseFloat(fields[32]) || 0;
         var high = parseFloat(fields[33]) || 0;
         var low = parseFloat(fields[34]) || 0;
         var volume = parseFloat(fields[36]) || 0;
-        var amount = parseFloat(fields[37]) || 0;
         updateTime = fields[30] || '';
 
         var isUp = change >= 0;
         var color = isUp ? '#dc2626' : '#16a34a';
         var arrow = isUp ? '▲' : '▼';
         var volumeStr = volume > 100000000 ? (volume/100000000).toFixed(2)+'亿' : volume > 10000 ? (volume/10000).toFixed(2)+'万' : volume;
+        var xqCode = code.replace('sh','SH').replace('sz','SZ');
+        var thsCode = code.replace('sh','').replace('sz','');
 
-        html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
-        html += '<div>';
-        html += '<div style="font-size:15px;font-weight:700;color:var(--text-dark);">'+name+'</div>';
-        html += '<div style="font-size:11px;color:var(--text-muted);">'+code+'</div>';
-        html += '</div>';
-        html += '<div style="text-align:right;">';
-        html += '<div style="font-size:20px;font-weight:700;color:'+color+';">'+lastPrice.toFixed(2)+'</div>';
-        html += '<div style="font-size:12px;color:'+color+';">'+arrow+' '+Math.abs(change).toFixed(2)+' ('+changePct.toFixed(2)+'%)</div>';
-        html += '</div>';
-        html += '</div>';
-        html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);">';
-        html += '<span>高 '+high.toFixed(2)+'</span>';
-        html += '<span>低 '+low.toFixed(2)+'</span>';
-        html += '<span>量 '+volumeStr+'</span>';
-        html += '</div>';
-        html += '<div style="display:flex;gap:8px;margin-top:8px;">';
-        html += '<a href="https://xueqiu.com/S/'+code.replace('sh','SH').replace('sz','SZ')+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a>';
-        html += '<span style="color:#ddd;">|</span>';
-        html += '<a href="https://stockpage.10jqka.com.cn/'+code.replace('sh','').replace('sz','')+'/" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">同花顺</a>';
-        html += '<span style="color:#ddd;">|</span>';
-        html += '<button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button>';
-        html += '</div>';
-        html += '</div>';
-      } catch(e) {}
-    });
-    document.getElementById('stockList').innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
-    if (updateTime) {
-      var t = updateTime.length >= 14 ? updateTime.slice(0,4)+'-'+updateTime.slice(4,6)+'-'+updateTime.slice(6,8)+' '+updateTime.slice(8,10)+':'+updateTime.slice(10,12)+':'+updateTime.slice(12,14) : updateTime;
-      document.getElementById('stockUpdateTime').textContent = '更新于 ' + t;
-    }
-  };
-  script.onerror = function() {
-    // 备用：用 fetch 方式
-    fetch('https://qt.gtimg.cn/q=' + codes).then(function(r){ return r.text(); }).then(function(text){
-      var html = '';
-      stocks.forEach(function(code) {
-        var match = text.match(new RegExp('v_' + code + '="([^"]*)"'));
-        if (!match) return;
-        var fields = match[1].split('~');
-        var name = fields[1] || code;
-        var lastPrice = parseFloat(fields[3]) || 0;
-        var prevClose = parseFloat(fields[4]) || 0;
-        var change = parseFloat(fields[31]) || 0;
-        var changePct = parseFloat(fields[32]) || 0;
-        var high = parseFloat(fields[33]) || 0;
-        var low = parseFloat(fields[34]) || 0;
-        var isUp = change >= 0;
-        var color = isUp ? '#dc2626' : '#16a34a';
-        var arrow = isUp ? '▲' : '▼';
         html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;">';
         html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
         html += '<div><div style="font-size:15px;font-weight:700;color:var(--text-dark);">'+name+'</div><div style="font-size:11px;color:var(--text-muted);">'+code+'</div></div>';
         html += '<div style="text-align:right;"><div style="font-size:20px;font-weight:700;color:'+color+';">'+lastPrice.toFixed(2)+'</div><div style="font-size:12px;color:'+color+';">'+arrow+' '+Math.abs(change).toFixed(2)+' ('+changePct.toFixed(2)+'%)</div></div>';
-        html += '</div><div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);"><span>高 '+high.toFixed(2)+'</span><span>低 '+low.toFixed(2)+'</span></div>';
-        html += '<div style="display:flex;gap:8px;margin-top:8px;"><a href="https://xueqiu.com/S/'+code.replace('sh','SH').replace('sz','SZ')+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a><span style="color:#ddd;">|</span><button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button></div>';
         html += '</div>';
+        html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);"><span>高 '+high.toFixed(2)+'</span><span>低 '+low.toFixed(2)+'</span><span>量 '+volumeStr+'</span></div>';
+        html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+        html += '<a href="https://xueqiu.com/S/'+xqCode+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a>';
+        html += '<span style="color:#ddd;">|</span>';
+        html += '<a href="https://stockpage.10jqka.com.cn/'+thsCode+'/" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">同花顺</a>';
+        html += '<span style="color:#ddd;">|</span>';
+        html += '<button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button>';
+        html += '</div></div>';
       });
-      document.getElementById('stockList').innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
-    }).catch(function(){
-      document.getElementById('stockList').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">网络异常，请稍后重试</div>';
+      if (listEl) listEl.innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
+      if (updateTime) {
+        var t = updateTime.length >= 14 ? updateTime.slice(0,4)+'-'+updateTime.slice(4,6)+'-'+updateTime.slice(6,8)+' '+updateTime.slice(8,10)+':'+updateTime.slice(10,12)+':'+updateTime.slice(12,14) : updateTime;
+        var ut = document.getElementById('stockUpdateTime');
+        if (ut) ut.textContent = '更新于 ' + t;
+      }
+    })
+    .catch(function(err) {
+      if (listEl) listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">网络异常，请稍后重试<br><span style="font-size:11px;">'+err.message+'</span></div>';
     });
-  };
-  document.body.appendChild(script);
-  setTimeout(function(){ if(script.parentNode) script.parentNode.removeChild(script); }, 5000);
 }
 
 function addStock() {
