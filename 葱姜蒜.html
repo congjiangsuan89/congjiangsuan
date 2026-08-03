@@ -524,6 +524,9 @@
     <div class="nav-item" onclick="switchMenu('summary', this)">
       <span class="nav-icon">📅</span><span>月度打卡</span>
     </div>
+    <div class="nav-item" onclick="switchMenu('checkin', this)">
+      <span class="nav-icon">✅</span><span>每日打卡</span>
+    </div>
     <div class="nav-item" onclick="switchMenu('money', this)">
       <span class="nav-icon">💰</span><span>记账本</span>
     </div>
@@ -605,6 +608,13 @@
         <div id="summaryNote"></div>
       </div>
 
+      <!-- 每日打卡 -->
+      <div class="page" id="page-checkin">
+        <div class="page-title">✅ 每日打卡</div>
+        <div class="page-subtitle">每日小任务打卡，坚持就是胜利</div>
+        <div id="checkinPanel"></div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -642,6 +652,7 @@ const pageConfig = {
   inspiration: { title: '💡 我的灵感', subtitle: '捕捉灵感，记录热点与思考' },
   bedtime: { title: '🎧 睡前收听', subtitle: '点击子项，打开睡前音频' },
   body: { title: '⚖️ 身体管理', subtitle: '记录体重、感受与生理周期' },
+  checkin: { title: '✅ 每日打卡', subtitle: '每日小任务打卡，坚持就是胜利' },
 };
 
 function switchMenu(menuId, el) {
@@ -654,6 +665,7 @@ function switchMenu(menuId, el) {
   if (target && target.hasAttribute('data-items')) renderMenuPage(target);
   if (menuId === 'money') document.getElementById('noteArea_money').value = localStorage.getItem('cjs_note_money') || '';
   if (menuId === 'summary') { renderSummaryCalendar(); renderMonthlySummary(); }
+  if (menuId === 'checkin') { renderCheckinPanel(); }
 }
 
   function renderMenuPage(pageEl) {
@@ -1375,6 +1387,132 @@ function saveMonthlySummary() {
 }
 
 renderTodoList();
+
+// ===== 每日打卡 =====
+function getCheckinTasks() { return JSON.parse(localStorage.getItem('cjs_checkin_tasks') || '[]'); }
+function saveCheckinTasks(d) { localStorage.setItem('cjs_checkin_tasks', JSON.stringify(d)); }
+function getCheckinRecords() { return JSON.parse(localStorage.getItem('cjs_checkin_records') || '{}'); }
+function saveCheckinRecords(d) { localStorage.setItem('cjs_checkin_records', JSON.stringify(d)); }
+
+function renderCheckinPanel() {
+  const panel = document.getElementById('checkinPanel');
+  if (!panel) return;
+  var tasks = getCheckinTasks();
+  var records = getCheckinRecords();
+  var today = getToday();
+  var todayRecords = records[today] || {};
+
+  var html = '<div class="local-wrap">';
+
+  // 今日打卡概览
+  var doneCount = 0;
+  tasks.forEach(function(t){ if (todayRecords[t.id]) doneCount++; });
+  var totalCount = tasks.length;
+  var pct = totalCount > 0 ? Math.round(doneCount/totalCount*100) : 0;
+
+  html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:16px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-size:16px;font-weight:700;">📅 '+today+'</span><span style="font-size:14px;color:var(--accent);font-weight:600;">'+doneCount+'/'+totalCount+' 已完成</span></div>';
+  if (totalCount > 0) {
+    html += '<div style="background:#f0e8f5;border-radius:10px;height:8px;overflow:hidden;"><div style="background:var(--accent);height:100%;width:'+pct+'%;transition:width 0.3s;"></div></div>';
+  }
+  html += '</div>';
+
+  // 任务列表
+  if (tasks.length === 0) {
+    html += '<div class="weight-empty">还没有打卡任务，在下方添加吧 ✨</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">';
+    tasks.forEach(function(t) {
+      var isChecked = todayRecords[t.id];
+      var streak = getCheckinStreak(t.id, records);
+      html += '<div style="display:flex;align-items:center;gap:12px;background:var(--card-bg);border:1px solid '+(isChecked?'var(--accent)':'var(--card-border)')+';border-radius:14px;padding:12px 14px;'+(isChecked?'opacity:0.7;':'')+'">';
+      html += '<button onclick="toggleCheckin(\''+t.id+'\')" style="width:28px;height:28px;border-radius:50%;border:2px solid '+(isChecked?'var(--accent)':'#ddd')+';background:'+(isChecked?'var(--accent)':'transparent')+';color:#fff;font-size:14px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(isChecked?'✓':'')+'</button>';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="font-size:15px;font-weight:600;color:var(--text-dark);'+(isChecked?'text-decoration:line-through;':'')+'">'+escapeHtml(t.name)+'</div>';
+      if (t.url) {
+        html += '<a href="'+t.url+'" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;" onclick="event.stopPropagation();">🔗 去完成</a>';
+      }
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">🔥 连续 '+streak+' 天</div>';
+      html += '</div>';
+      html += '<button onclick="deleteCheckinTask(\''+t.id+'\')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;padding:4px;" title="删除">⋯</button>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // 添加新任务
+  html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:16px;">';
+  html += '<div style="font-weight:600;margin-bottom:12px;font-size:14px;">➕ 添加打卡任务</div>';
+  html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+  html += '<input type="text" id="checkinName" placeholder="任务名称（如：蚂蚁森林收能量）" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;">';
+  html += '<input type="text" id="checkinUrl" placeholder="链接（可选，如支付宝口令）" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;">';
+  html += '<button onclick="addCheckinTask()" class="note-save-btn" style="align-self:flex-start;">添加任务</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // 历史记录
+  var dates = Object.keys(records).sort().reverse().slice(0, 7);
+  if (dates.length > 0) {
+    html += '<details style="margin-top:8px;"><summary style="cursor:pointer;color:var(--text-muted);font-size:14px;font-weight:600;">📋 最近7天记录</summary><div style="margin-top:10px;">';
+    dates.forEach(function(d) {
+      var dayTasks = records[d] || {};
+      var dayNames = tasks.filter(function(t){ return dayTasks[t.id]; }).map(function(t){ return t.name; });
+      html += '<div style="padding:6px 0;border-bottom:1px solid var(--card-border);font-size:13px;"><span style="color:var(--text-muted);">'+d+'</span> <span style="color:var(--accent);">'+dayNames.length+'个</span> '+(dayNames.length>0?dayNames.join('、'):'')+'</div>';
+    });
+    html += '</div></details>';
+  }
+
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function getCheckinStreak(taskId, records) {
+  var streak = 0;
+  var d = new Date();
+  while (true) {
+    var dateStr = d.toISOString().split('T')[0];
+    if (records[dateStr] && records[dateStr][taskId]) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function toggleCheckin(taskId) {
+  var today = getToday();
+  var records = getCheckinRecords();
+  if (!records[today]) records[today] = {};
+  if (records[today][taskId]) {
+    delete records[today][taskId];
+  } else {
+    records[today][taskId] = new Date().toISOString();
+  }
+  saveCheckinRecords(records);
+  renderCheckinPanel();
+}
+
+function addCheckinTask() {
+  var nameEl = document.getElementById('checkinName');
+  var urlEl = document.getElementById('checkinUrl');
+  if (!nameEl || !nameEl.value.trim()) return;
+  var tasks = getCheckinTasks();
+  tasks.push({ id: 't' + Date.now(), name: nameEl.value.trim(), url: urlEl.value.trim() });
+  saveCheckinTasks(tasks);
+  nameEl.value = '';
+  urlEl.value = '';
+  renderCheckinPanel();
+}
+
+function deleteCheckinTask(taskId) {
+  if (!confirm('确定删除这个打卡任务？历史记录会保留。')) return;
+  var tasks = getCheckinTasks();
+  tasks = tasks.filter(function(t){ return t.id !== taskId; });
+  saveCheckinTasks(tasks);
+  renderCheckinPanel();
+}
 
 // ===== 月度打卡 =====
 var summaryMonthView = { year: new Date().getFullYear(), month: new Date().getMonth() };
