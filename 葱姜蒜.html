@@ -527,6 +527,9 @@
     <div class="nav-item" onclick="switchMenu('checkin', this)">
       <span class="nav-icon">✅</span><span>每日打卡</span>
     </div>
+    <div class="nav-item" onclick="switchMenu('stock', this)">
+      <span class="nav-icon">📈</span><span>股票分析</span>
+    </div>
     <div class="nav-item" onclick="switchMenu('money', this)">
       <span class="nav-icon">💰</span><span>记账本</span>
     </div>
@@ -615,6 +618,13 @@
         <div id="checkinPanel"></div>
       </div>
 
+      <!-- 股票分析 -->
+      <div class="page" id="page-stock">
+        <div class="page-title">📈 股票分析</div>
+        <div class="page-subtitle">自选股实时行情，涨跌一目了然</div>
+        <div id="stockPanel"></div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -653,6 +663,7 @@ const pageConfig = {
   bedtime: { title: '🎧 睡前收听', subtitle: '点击子项，打开睡前音频' },
   body: { title: '⚖️ 身体管理', subtitle: '记录体重、感受与生理周期' },
   checkin: { title: '✅ 每日打卡', subtitle: '每日小任务打卡，坚持就是胜利' },
+  stock: { title: '📈 股票分析', subtitle: '自选股实时行情，涨跌一目了然' },
 };
 
 function switchMenu(menuId, el) {
@@ -666,6 +677,7 @@ function switchMenu(menuId, el) {
   if (menuId === 'money') document.getElementById('noteArea_money').value = localStorage.getItem('cjs_note_money') || '';
   if (menuId === 'summary') { renderSummaryCalendar(); renderMonthlySummary(); }
   if (menuId === 'checkin') { renderCheckinPanel(); }
+  if (menuId === 'stock') { renderStockPanel(); }
 }
 
   function renderMenuPage(pageEl) {
@@ -1514,7 +1526,193 @@ function deleteCheckinTask(taskId) {
   renderCheckinPanel();
 }
 
-// ===== 月度打卡 =====
+// ===== 股票分析 =====
+function getStockList() { return JSON.parse(localStorage.getItem('cjs_stocks') || '["sh000001","sz399001","sz399006","sh600519","sz000858","sh601318"]'); }
+function saveStockList(d) { localStorage.setItem('cjs_stocks', JSON.stringify(d)); }
+var stockRefreshTimer = null;
+
+function renderStockPanel() {
+  const panel = document.getElementById('stockPanel');
+  if (!panel) return;
+  var stocks = getStockList();
+  var html = '<div class="local-wrap">';
+
+  // 大盘概览 + 刷新
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+  html += '<span style="font-size:14px;color:var(--text-muted);" id="stockUpdateTime">加载中...</span>';
+  html += '<div style="display:flex;gap:8px;">';
+  html += '<button onclick="fetchStockData()" style="background:var(--accent);color:#fff;border:none;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer;">🔄 刷新</button>';
+  html += '</div>';
+  html += '</div>';
+
+  // 股票列表容器
+  html += '<div id="stockList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"><div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">正在获取行情...</div></div>';
+
+  // 添加股票
+  html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:16px;margin-bottom:16px;">';
+  html += '<div style="font-weight:600;margin-bottom:12px;font-size:14px;">➕ 添加自选股</div>';
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;">';
+  html += '<input type="text" id="stockInput" placeholder="股票代码（如 sh600519 或 sz000001）" style="flex:1;min-width:200px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:10px 14px;font-size:14px;outline:none;" onkeydown="if(event.key===\'Enter\')addStock()">';
+  html += '<button onclick="addStock()" class="note-save-btn">添加</button>';
+  html += '</div>';
+  html += '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">上证代码前加 sh，深证前加 sz（如 sh601318 中国平安）</div>';
+  html += '</div>';
+
+  // 常用股票快捷添加
+  html += '<details style="margin-bottom:16px;"><summary style="cursor:pointer;color:var(--text-muted);font-size:14px;font-weight:600;">📋 常用股票快捷添加</summary><div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">';
+  var commonStocks = [
+    {code:'sh600519', name:'贵州茅台'}, {code:'sh601318', name:'中国平安'},
+    {code:'sz000858', name:'五粮液'}, {code:'sh600036', name:'招商银行'},
+    {code:'sz000001', name:'平安银行'}, {code:'sh601398', name:'工商银行'},
+    {code:'sh601012', name:'隆基绿能'}, {code:'sz300750', name:'宁德时代'},
+    {code:'sh600276', name:'恒瑞医药'}, {code:'sz000333', name:'美的集团'},
+    {code:'sh601899', name:'紫金矿业'}, {code:'sz002594', name:'比亚迪'},
+    {code:'sh600900', name:'长江电力'}, {code:'sz000651', name:'格力电器'},
+  ];
+  commonStocks.forEach(function(s) {
+    html += '<button onclick="quickAddStock(\''+s.code+'\')" style="background:#f3edf9;border:1px solid var(--card-border);border-radius:10px;padding:6px 12px;font-size:12px;color:var(--accent);cursor:pointer;">'+s.name+'</button>';
+  });
+  html += '</div></details>';
+
+  html += '</div>';
+  panel.innerHTML = html;
+  fetchStockData();
+}
+
+function fetchStockData() {
+  var stocks = getStockList();
+  if (stocks.length === 0) {
+    document.getElementById('stockList').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">还没有自选股，在下方添加吧 📈</div>';
+    return;
+  }
+  var codes = stocks.join(',');
+  var script = document.createElement('script');
+  script.src = 'https://qt.gtimg.cn/q=' + codes + '&t=' + Date.now();
+  script.charset = 'GBK';
+  script.onload = function() {
+    var html = '';
+    var updateTime = '';
+    stocks.forEach(function(code) {
+      try {
+        var raw = window['v_' + code];
+        if (!raw) return;
+        // GBK编码在非GBK环境可能乱码，但数字字段可用
+        var fields = raw.split('~');
+        var name = fields[1] || code;
+        var lastPrice = parseFloat(fields[3]) || 0;
+        var prevClose = parseFloat(fields[4]) || 0;
+        var change = parseFloat(fields[31]) || 0;
+        var changePct = parseFloat(fields[32]) || 0;
+        var high = parseFloat(fields[33]) || 0;
+        var low = parseFloat(fields[34]) || 0;
+        var volume = parseFloat(fields[36]) || 0;
+        var amount = parseFloat(fields[37]) || 0;
+        updateTime = fields[30] || '';
+
+        var isUp = change >= 0;
+        var color = isUp ? '#dc2626' : '#16a34a';
+        var arrow = isUp ? '▲' : '▼';
+        var volumeStr = volume > 100000000 ? (volume/100000000).toFixed(2)+'亿' : volume > 10000 ? (volume/10000).toFixed(2)+'万' : volume;
+
+        html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div>';
+        html += '<div style="font-size:15px;font-weight:700;color:var(--text-dark);">'+name+'</div>';
+        html += '<div style="font-size:11px;color:var(--text-muted);">'+code+'</div>';
+        html += '</div>';
+        html += '<div style="text-align:right;">';
+        html += '<div style="font-size:20px;font-weight:700;color:'+color+';">'+lastPrice.toFixed(2)+'</div>';
+        html += '<div style="font-size:12px;color:'+color+';">'+arrow+' '+Math.abs(change).toFixed(2)+' ('+changePct.toFixed(2)+'%)</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);">';
+        html += '<span>高 '+high.toFixed(2)+'</span>';
+        html += '<span>低 '+low.toFixed(2)+'</span>';
+        html += '<span>量 '+volumeStr+'</span>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+        html += '<a href="https://xueqiu.com/S/'+code.replace('sh','SH').replace('sz','SZ')+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a>';
+        html += '<span style="color:#ddd;">|</span>';
+        html += '<a href="https://stockpage.10jqka.com.cn/'+code.replace('sh','').replace('sz','')+'/" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">同花顺</a>';
+        html += '<span style="color:#ddd;">|</span>';
+        html += '<button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button>';
+        html += '</div>';
+        html += '</div>';
+      } catch(e) {}
+    });
+    document.getElementById('stockList').innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
+    if (updateTime) {
+      var t = updateTime.length >= 14 ? updateTime.slice(0,4)+'-'+updateTime.slice(4,6)+'-'+updateTime.slice(6,8)+' '+updateTime.slice(8,10)+':'+updateTime.slice(10,12)+':'+updateTime.slice(12,14) : updateTime;
+      document.getElementById('stockUpdateTime').textContent = '更新于 ' + t;
+    }
+  };
+  script.onerror = function() {
+    // 备用：用 fetch 方式
+    fetch('https://qt.gtimg.cn/q=' + codes).then(function(r){ return r.text(); }).then(function(text){
+      var html = '';
+      stocks.forEach(function(code) {
+        var match = text.match(new RegExp('v_' + code + '="([^"]*)"'));
+        if (!match) return;
+        var fields = match[1].split('~');
+        var name = fields[1] || code;
+        var lastPrice = parseFloat(fields[3]) || 0;
+        var prevClose = parseFloat(fields[4]) || 0;
+        var change = parseFloat(fields[31]) || 0;
+        var changePct = parseFloat(fields[32]) || 0;
+        var high = parseFloat(fields[33]) || 0;
+        var low = parseFloat(fields[34]) || 0;
+        var isUp = change >= 0;
+        var color = isUp ? '#dc2626' : '#16a34a';
+        var arrow = isUp ? '▲' : '▼';
+        html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+        html += '<div><div style="font-size:15px;font-weight:700;color:var(--text-dark);">'+name+'</div><div style="font-size:11px;color:var(--text-muted);">'+code+'</div></div>';
+        html += '<div style="text-align:right;"><div style="font-size:20px;font-weight:700;color:'+color+';">'+lastPrice.toFixed(2)+'</div><div style="font-size:12px;color:'+color+';">'+arrow+' '+Math.abs(change).toFixed(2)+' ('+changePct.toFixed(2)+'%)</div></div>';
+        html += '</div><div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);"><span>高 '+high.toFixed(2)+'</span><span>低 '+low.toFixed(2)+'</span></div>';
+        html += '<div style="display:flex;gap:8px;margin-top:8px;"><a href="https://xueqiu.com/S/'+code.replace('sh','SH').replace('sz','SZ')+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a><span style="color:#ddd;">|</span><button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button></div>';
+        html += '</div>';
+      });
+      document.getElementById('stockList').innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
+    }).catch(function(){
+      document.getElementById('stockList').innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">网络异常，请稍后重试</div>';
+    });
+  };
+  document.body.appendChild(script);
+  setTimeout(function(){ if(script.parentNode) script.parentNode.removeChild(script); }, 5000);
+}
+
+function addStock() {
+  var input = document.getElementById('stockInput');
+  if (!input || !input.value.trim()) return;
+  var code = input.value.trim().toLowerCase();
+  if (!code.match(/^(sh|sz)\d{6}$/)) {
+    alert('请输入正确格式：sh + 6位数字（上证）或 sz + 6位数字（深证）');
+    return;
+  }
+  var stocks = getStockList();
+  if (stocks.indexOf(code) !== -1) { alert('已存在'); return; }
+  stocks.push(code);
+  saveStockList(stocks);
+  input.value = '';
+  renderStockPanel();
+}
+
+function quickAddStock(code) {
+  var stocks = getStockList();
+  if (stocks.indexOf(code) !== -1) { alert('已存在'); return; }
+  stocks.push(code);
+  saveStockList(stocks);
+  renderStockPanel();
+}
+
+function removeStock(code) {
+  var stocks = getStockList();
+  stocks = stocks.filter(function(s){ return s !== code; });
+  saveStockList(stocks);
+  renderStockPanel();
+}
+
+
 var summaryMonthView = { year: new Date().getFullYear(), month: new Date().getMonth() };
 
 function getMonthData() { return JSON.parse(localStorage.getItem('cjs_monthly') || '{}'); }
