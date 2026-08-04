@@ -576,7 +576,7 @@
       </div>
 
       <!-- 学英语 -->
-      <div class="page" id="page-english" data-items='[{"icon":"📺","label":"正在进行","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=7d36e11c-36e7-11e7-82c4-902b346f2ac5","progress":"english_progress_ongoing"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b","progress":"english_progress_6min"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/","progress":"english_progress_chinadaily"}]'>
+      <div class="page" id="page-english" data-items='[{"icon":"📺","label":"正在进行","type":"link","url":"https://dict.eudic.net/ting/","progress":"english_progress_ongoing"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b","progress":"english_progress_6min"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/","progress":"english_progress_chinadaily"}]'>
       </div>
 
       <!-- 读书笔记 -->
@@ -596,7 +596,7 @@
       </div>
 
       <!-- 睡前收听 -->
-      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/-1","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://xyzrank.top/","progress":"bedtime_xiaoyuzhou"}]'>
+      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/-1","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://xyzrank.top/","progress":"bedtime_xiaoyuzhou"},{"icon":"🎬","label":"值得看的视频","type":"link","url":"https://www.bilibili.com/v/popular/all","progress":"bedtime_video"}]'>
       </div>
 
       <!-- 身体管理 -->
@@ -751,7 +751,8 @@ function toggleItem(key, idx) {
         '岩中花述': 'JustPod 出品，由张之琪与麻吉星主持的女性谈话节目。',
         '鲁豫慢谈': '鲁豫在 B 站的个人频道，分享访谈与生活感悟。',
         '知乎Morning Call': '知乎日报音频版，每日热点话题晨报。',
-        '小宇宙推荐': '中文播客排行榜，按订阅数展示当前最热门的小宇宙播客，每日更新。'
+        '小宇宙推荐': '中文播客排行榜，按订阅数展示当前最热门的小宇宙播客，每日更新。',
+        '值得看的视频': 'B站热门视频榜单，每日更新，发现值得一看的优质内容。'
       }[item.label] || '睡前音频内容，建议在对应 App 中收听。';
       var extBtn = '<a href="'+item.url+'" target="_blank" style="margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:6px 14px;font-size:12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;" onclick="recordLinkProgress(\''+item.progress+'\',\''+item.label.replace(/'/g,'\\\'')+'\')">📱 打开收听</a>';
       header.innerHTML = item.icon + ' ' + item.label + ' ' + extBtn;
@@ -1617,19 +1618,21 @@ function fetchStockData() {
         var xqCode = code.replace('sh','SH').replace('sz','SZ');
         var thsCode = code.replace('sh','').replace('sz','');
 
-        html += '<div style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;">';
+        html += '<div id="stock-card-'+code+'" style="background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;padding:12px 16px;cursor:pointer;" onclick="toggleStockDetail(\''+code+'\')">';
         html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
         html += '<div><div style="font-size:15px;font-weight:700;color:var(--text-dark);">'+name+'</div><div style="font-size:11px;color:var(--text-muted);">'+code+'</div></div>';
         html += '<div style="text-align:right;"><div style="font-size:20px;font-weight:700;color:'+color+';">'+lastPrice.toFixed(2)+'</div><div style="font-size:12px;color:'+color+';">'+arrow+' '+Math.abs(change).toFixed(2)+' ('+changePct.toFixed(2)+'%)</div></div>';
         html += '</div>';
         html += '<div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--text-muted);"><span>高 '+high.toFixed(2)+'</span><span>低 '+low.toFixed(2)+'</span><span>量 '+volumeStr+'</span></div>';
-        html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+        html += '<div style="display:flex;gap:8px;margin-top:8px;" onclick="event.stopPropagation();">';
         html += '<a href="https://xueqiu.com/S/'+xqCode+'" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">雪球详情</a>';
         html += '<span style="color:#ddd;">|</span>';
         html += '<a href="https://stockpage.10jqka.com.cn/'+thsCode+'/" target="_blank" style="font-size:11px;color:var(--accent);text-decoration:none;">同花顺</a>';
         html += '<span style="color:#ddd;">|</span>';
         html += '<button onclick="removeStock(\''+code+'\')" style="font-size:11px;color:#999;background:none;border:none;cursor:pointer;text-decoration:underline;">删除</button>';
-        html += '</div></div>';
+        html += '</div>';
+        html += '<div id="stock-detail-'+code+'" style="display:none;margin-top:12px;border-top:1px solid var(--card-border);padding-top:12px;"></div>';
+        html += '</div>';
       });
       if (listEl) listEl.innerHTML = html || '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">获取行情失败，请刷新重试</div>';
       if (updateTime) {
@@ -1642,6 +1645,323 @@ function fetchStockData() {
       if (listEl) listEl.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:14px;">网络异常，请稍后重试<br><span style="font-size:11px;">'+err.message+'</span></div>';
     });
 }
+
+function toggleStockDetail(code) {
+  var detail = document.getElementById('stock-detail-' + code);
+  if (!detail) return;
+  if (detail.style.display === 'none') {
+    detail.style.display = 'block';
+    detail.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:12px;font-size:13px;">加载K线数据...</div>';
+    fetchStockKline(code, detail);
+  } else {
+    detail.style.display = 'none';
+  }
+}
+
+function fetchStockKline(code, container) {
+  var url = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=' + code + ',day,,,60,qfq';
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var klineData = data.data[code];
+      if (!klineData) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">获取数据失败</div>'; return; }
+      var dayData = klineData.qfqday || klineData.day || [];
+      if (dayData.length === 0) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">无K线数据</div>'; return; }
+
+      // 解析K线数据
+      var candles = dayData.map(function(d) {
+        return { date: d[0], open: parseFloat(d[1]), close: parseFloat(d[2]), high: parseFloat(d[3]), low: parseFloat(d[4]), vol: parseFloat(d[5]) };
+      });
+
+      // 计算技术指标
+      var closes = candles.map(function(c){ return c.close; });
+      var ma5 = calcMA(closes, 5);
+      var ma10 = calcMA(closes, 10);
+      var ma20 = calcMA(closes, 20);
+      var lastClose = closes[closes.length - 1];
+      var ma5Val = ma5[ma5.length - 1];
+      var ma10Val = ma10[ma10.length - 1];
+      var ma20Val = ma20[ma20.length - 1];
+
+      // 趋势分析
+      var trendAnalysis = analyzeTrend(candles, ma5Val, ma10Val, ma20Val);
+
+      // 画K线图
+      var html = '';
+
+      // K线图 Canvas
+      html += '<canvas id="kchart-' + code + '" style="width:100%;height:240px;"></canvas>';
+
+      // 技术指标
+      html += '<div style="display:flex;gap:12px;margin-top:10px;font-size:12px;flex-wrap:wrap;">';
+      html += '<span style="background:#f3edf9;padding:4px 10px;border-radius:8px;color:#7c5cbf;">MA5: '+ma5Val.toFixed(2)+'</span>';
+      html += '<span style="background:#f3edf9;padding:4px 10px;border-radius:8px;color:#e8a317;">MA10: '+ma10Val.toFixed(2)+'</span>';
+      html += '<span style="background:#f3edf9;padding:4px 10px;border-radius:8px;color:#16a34a;">MA20: '+ma20Val.toFixed(2)+'</span>';
+      html += '</div>';
+
+      // 分析结论
+      html += '<div style="margin-top:12px;padding:12px;background:#f3edf9;border-radius:12px;">';
+      html += '<div style="font-size:13px;font-weight:700;margin-bottom:6px;">📊 技术分析</div>';
+      html += '<div style="font-size:12px;line-height:1.8;color:var(--text-dark);">'+trendAnalysis+'</div>';
+      html += '</div>';
+
+      // 近期支撑压力位
+      var recent30 = candles.slice(-30);
+      var maxHigh = Math.max.apply(null, recent30.map(function(c){ return c.high; }));
+      var minLow = Math.min.apply(null, recent30.map(function(c){ return c.low; }));
+      html += '<div style="margin-top:8px;font-size:12px;color:var(--text-muted);">';
+      html += '近30日 压力位: <span style="color:#dc2626;font-weight:600;">'+maxHigh.toFixed(2)+'</span> | 支撑位: <span style="color:#16a34a;font-weight:600;">'+minLow.toFixed(2)+'</span>';
+      html += '</div>';
+
+      // 外部链接
+      var xqCode = code.replace('sh','SH').replace('sz','SZ');
+      var thsCode = code.replace('sh','').replace('sz','');
+      html += '<div style="margin-top:10px;display:flex;gap:12px;font-size:11px;">';
+      html += '<a href="https://xueqiu.com/S/'+xqCode+'" target="_blank" style="color:var(--accent);text-decoration:none;">🔗 雪球详情</a>';
+      html += '<a href="https://stockpage.10jqka.com.cn/'+thsCode+'/" target="_blank" style="color:var(--accent);text-decoration:none;">🔗 同花顺</a>';
+      html += '<a href="https://quote.eastmoney.com/'+code+'.html" target="_blank" style="color:var(--accent);text-decoration:none;">🔗 东方财富</a>';
+      html += '</div>';
+
+      container.innerHTML = html;
+
+      // 延迟绘制K线
+      setTimeout(function() { drawKlineChart(code, candles, ma5, ma10, ma20); }, 50);
+    })
+    .catch(function(err) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">网络异常: '+err.message+'</div>';
+    });
+}
+
+function calcMA(closes, period) {
+  var result = [];
+  for (var i = 0; i < closes.length; i++) {
+    if (i < period - 1) { result.push(null); continue; }
+    var sum = 0;
+    for (var j = 0; j < period; j++) sum += closes[i - j];
+    result.push(sum / period);
+  }
+  return result;
+}
+
+function analyzeTrend(candles, ma5, ma10, ma20) {
+  var lastCandle = candles[candles.length - 1];
+  var lastClose = lastCandle.close;
+  var analysis = '';
+
+  // MA趋势判断
+  if (ma5 > ma10 && ma10 > ma20) {
+    analysis += '🟢 <b>多头排列</b>：MA5 > MA10 > MA20，短期趋势向上，多方占优。<br>';
+  } else if (ma5 < ma10 && ma10 < ma20) {
+    analysis += '🔴 <b>空头排列</b>：MA5 < MA10 < MA20，短期趋势向下，空方占优。<br>';
+  } else if (ma5 > ma10) {
+    analysis += '🟡 <b>短期反弹</b>：MA5上穿MA10，可能有反弹机会，但需确认。<br>';
+  } else {
+    analysis += '⚪ <b>震荡整理</b>：均线交叉纠缠，方向不明，建议观望。<br>';
+  }
+
+  // 价格与MA20关系
+  if (lastClose > ma20) {
+    analysis += '📈 当前价格在20日均线<b>上方</b>，中期趋势偏多。<br>';
+  } else {
+    analysis += '📉 当前价格在20日均线<b>下方</b>，中期趋势偏空。<br>';
+  }
+
+  // 近5日涨跌
+  if (candles.length >= 6) {
+    var fiveDaysAgo = candles[candles.length - 6].close;
+    var fiveDayChange = ((lastClose - fiveDaysAgo) / fiveDaysAgo * 100);
+    var sign = fiveDayChange >= 0 ? '+' : '';
+    analysis += '📅 近5日涨跌：<b style="color:'+(fiveDayChange>=0?'#dc2626':'#16a34a')+';">'+sign+fiveDayChange.toFixed(2)+'%</b><br>';
+  }
+
+  // 成交量分析
+  if (candles.length >= 2) {
+    var lastVol = candles[candles.length - 1].vol;
+    var prevVol = candles[candles.length - 2].vol;
+    if (lastVol > prevVol * 1.5) {
+      analysis += '📊 今日成交量<b>明显放大</b>（较昨日+'+((lastVol/prevVol-1)*100).toFixed(0)+'%），关注资金动向。<br>';
+    } else if (lastVol < prevVol * 0.5) {
+      analysis += '📊 今日成交量<b>明显缩量</b>（较昨日-'+((1-lastVol/prevVol)*100).toFixed(0)+'%），市场观望。<br>';
+    }
+  }
+
+  // RSI简单计算
+  var rsi = 50;
+  if (candles.length >= 15) {
+    var gains = 0, losses = 0;
+    for (var i = candles.length - 14; i < candles.length; i++) {
+      var diff = candles[i].close - candles[i - 1].close;
+      if (diff > 0) gains += diff; else losses -= diff;
+    }
+    var rs = losses === 0 ? 100 : gains / losses;
+    rsi = 100 - (100 / (1 + rs));
+    var rsiLabel = rsi > 70 ? '超买区间⚠️' : rsi < 30 ? '超卖区间📌' : '正常区间';
+    analysis += '🔄 RSI(14)：<b>'+rsi.toFixed(1)+'</b> '+rsiLabel+'<br>';
+  }
+
+  // ===== 未来涨跌预测 =====
+  var score = 0; // 正数看多，负数看空
+  var signals = [];
+
+  // 1. 均线趋势 (权重30)
+  if (ma5 > ma10 && ma10 > ma20) { score += 30; signals.push('均线多头 +30'); }
+  else if (ma5 < ma10 && ma10 < ma20) { score -= 30; signals.push('均线空头 -30'); }
+  else if (ma5 > ma10) { score += 15; signals.push('MA5上穿 +15'); }
+  else { score -= 10; signals.push('均线纠结 -10'); }
+
+  // 2. RSI (权重20)
+  if (rsi < 30) { score += 20; signals.push('RSI超卖反弹 +20'); }
+  else if (rsi > 70) { score -= 20; signals.push('RSI超买回调 -20'); }
+  else { score += (rsi - 50) * 0.4; signals.push('RSI中性 '+(rsi-50).toFixed(0)); }
+
+  // 3. 价格与MA20 (权重20)
+  if (lastClose > ma20) { score += 20; signals.push('价在MA20上 +20'); }
+  else { score -= 20; signals.push('价在MA20下 -20'); }
+
+  // 4. 近5日动量 (权重15)
+  if (candles.length >= 6) {
+    var fiveDaysAgo2 = candles[candles.length - 6].close;
+    var momentum = ((lastClose - fiveDaysAgo2) / fiveDaysAgo2 * 100);
+    if (momentum > 3) { score += 15; signals.push('5日强势 +15'); }
+    else if (momentum > 0) { score += 8; signals.push('5日小涨 +8'); }
+    else if (momentum > -3) { score -= 8; signals.push('5日小跌 -8'); }
+    else { score -= 15; signals.push('5日弱势 -15'); }
+  }
+
+  // 5. 成交量配合 (权重15)
+  if (candles.length >= 2) {
+    var lastVol2 = candles[candles.length - 1].vol;
+    var prevVol2 = candles[candles.length - 2].vol;
+    var isUpDay = lastCandle.close >= lastCandle.open;
+    if (lastVol2 > prevVol2 * 1.3 && isUpDay) { score += 15; signals.push('放量上涨 +15'); }
+    else if (lastVol2 > prevVol2 * 1.3 && !isUpDay) { score -= 15; signals.push('放量下跌 -15'); }
+    else if (lastVol2 < prevVol2 * 0.7) { score += 0; signals.push('缩量观望 0'); }
+    else { score += 5; signals.push('量价平稳 +5'); }
+  }
+
+  // 综合判断
+  var prediction, predColor, predIcon;
+  if (score >= 50) { prediction = '看涨'; predColor = '#dc2626'; predIcon = '🚀'; }
+  else if (score >= 20) { prediction = '偏多'; predColor = '#e8710c'; predIcon = '📈'; }
+  else if (score >= -20) { prediction = '震荡'; predColor = '#8a7aa0'; predIcon = '➡️'; }
+  else if (score >= -50) { prediction = '偏空'; predColor = '#0ea5e9'; predIcon = '📉'; }
+  else { prediction = '看跌'; predColor = '#16a34a'; predIcon = '🔻'; }
+
+  analysis += '<br><div style="margin-top:8px;padding:10px;background:#fff;border-radius:10px;border:1px solid var(--card-border);">';
+  analysis += '<div style="font-size:13px;font-weight:700;margin-bottom:6px;">🔮 未来趋势预测</div>';
+  analysis += '<div style="font-size:18px;font-weight:700;color:'+predColor+';">'+predIcon+' '+prediction+'（评分 '+score.toFixed(0)+'）</div>';
+  analysis += '<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">';
+  signals.forEach(function(s) { analysis += '<span style="display:inline-block;margin:2px 4px;background:#f3edf9;padding:2px 8px;border-radius:6px;">'+s+'</span>'; });
+  analysis += '</div>';
+  analysis += '<div style="font-size:11px;color:#999;margin-top:6px;">评分范围 -100 ~ +100，≥50看涨，≥20偏多，-20~20震荡，≤-20偏空，≤-50看跌</div>';
+  analysis += '</div>';
+
+  analysis += '<br><span style="font-size:11px;color:#999;">⚠️ 以上分析基于技术指标自动计算，仅供参考，不构成投资建议。投资有风险，入市需谨慎。</span>';
+  return analysis;
+}
+
+function drawKlineChart(code, candles, ma5, ma10, ma20) {
+  var canvas = document.getElementById('kchart-' + code);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.parentElement.clientWidth - 24;
+  var h = 240;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  var pad = { top: 10, right: 50, bottom: 30, left: 10 };
+  var pw = w - pad.left - pad.right, ph = h - pad.top - pad.bottom;
+
+  // 最近60根K线
+  var data = candles.slice(-60);
+  var ma5Data = ma5.slice(-60);
+  var ma10Data = ma10.slice(-60);
+  var ma20Data = ma20.slice(-60);
+
+  // 价格范围
+  var allVals = [];
+  data.forEach(function(c) { allVals.push(c.high, c.low); });
+  ma5Data.forEach(function(v) { if (v) allVals.push(v); });
+  ma10Data.forEach(function(v) { if (v) allVals.push(v); });
+  ma20Data.forEach(function(v) { if (v) allVals.push(v); });
+  var minP = Math.min.apply(null, allVals);
+  var maxP = Math.max.apply(null, allVals);
+  var range = maxP - minP || 1;
+  minP -= range * 0.05; maxP += range * 0.05;
+
+  // 背景
+  ctx.fillStyle = '#faf7fd'; ctx.fillRect(0, 0, w, h);
+
+  // 网格线
+  ctx.strokeStyle = '#efe5f8'; ctx.lineWidth = 1;
+  for (var i = 0; i <= 4; i++) {
+    var y = pad.top + (ph / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(w - pad.right, y); ctx.stroke();
+    ctx.fillStyle = '#8a7aa0'; ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillText((maxP - (maxP - minP) / 4 * i).toFixed(1), w - pad.right + 4, y + 4);
+  }
+
+  // K线宽度
+  var cw = pw / data.length;
+  var bw = Math.max(2, cw * 0.6);
+
+  // 绘制K线
+  data.forEach(function(c, i) {
+    var x = pad.left + cw * i + cw / 2;
+    var yOpen = pad.top + ph - ((c.open - minP) / (maxP - minP)) * ph;
+    var yClose = pad.top + ph - ((c.close - minP) / (maxP - minP)) * ph;
+    var yHigh = pad.top + ph - ((c.high - minP) / (maxP - minP)) * ph;
+    var yLow = pad.top + ph - ((c.low - minP) / (maxP - minP)) * ph;
+    var isUp = c.close >= c.open;
+    var color = isUp ? '#dc2626' : '#16a34a';
+
+    // 影线
+    ctx.strokeStyle = color; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, yHigh); ctx.lineTo(x, yLow); ctx.stroke();
+
+    // 实体
+    ctx.fillStyle = color;
+    var bodyTop = Math.min(yOpen, yClose);
+    var bodyH = Math.max(1, Math.abs(yClose - yOpen));
+    ctx.fillRect(x - bw / 2, bodyTop, bw, bodyH);
+  });
+
+  // 绘制均线
+  function drawMA(maData, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var started = false;
+    maData.forEach(function(v, i) {
+      if (v === null) return;
+      var x = pad.left + cw * i + cw / 2;
+      var y = pad.top + ph - ((v - minP) / (maxP - minP)) * ph;
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+  drawMA(ma5Data, '#7c5cbf');
+  drawMA(ma10Data, '#e8a317');
+  drawMA(ma20Data, '#16a34a');
+
+  // X轴日期标签
+  ctx.fillStyle = '#8a7aa0'; ctx.font = '9px sans-serif'; ctx.textAlign = 'center';
+  var labelStep = Math.ceil(data.length / 4);
+  data.forEach(function(c, i) {
+    if (i % labelStep !== 0 && i !== data.length - 1) return;
+    var x = pad.left + cw * i + cw / 2;
+    ctx.fillText(c.date.slice(5), x, h - pad.bottom + 14);
+  });
+
+  // 图例
+  ctx.font = '10px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#7c5cbf'; ctx.fillText('MA5', pad.left + 4, pad.top + 12);
+  ctx.fillStyle = '#e8a317'; ctx.fillText('MA10', pad.left + 40, pad.top + 12);
+  ctx.fillStyle = '#16a34a'; ctx.fillText('MA20', pad.left + 80, pad.top + 12);
+}
+
 
 function addStock() {
   var input = document.getElementById('stockInput');
