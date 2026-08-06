@@ -545,7 +545,7 @@
       <!-- 今日计划 -->
       <div class="page active" id="page-todo">
         <div class="page-title">📝 今日计划</div>
-        <div class="page-subtitle">完成一项，打勾一项</div>
+        <div class="page-subtitle">每日固定计划 + 自由添加，完成一项打勾一项</div>
         <div class="input-row">
           <input class="todo-input" id="todoInput" type="text" placeholder="添加今日任务…" onkeydown="if(event.key==='Enter')addTodo()">
           <button class="send-btn" onclick="addTodo()">添加</button>
@@ -555,10 +555,10 @@
             <div class="stat">📋 总计 <strong id="totalCount">0</strong></div>
             <div class="stat">✅ 完成 <strong id="doneCount">0</strong></div>
           </div>
-          <button class="punch-btn" onclick="clearDone()">清除已完成</button>
+          <button class="punch-btn" onclick="clearDone()">重置打勾</button>
         </div>
         <div class="todo-list-card" id="todoList">
-          <div class="list-tip" id="emptyTip">还没有任务，在上面添加今日计划吧 ✨</div>
+          <div class="list-tip" id="emptyTip">📌 每日固定计划会自动生成，5条空白可自由填写 ✨</div>
         </div>
         <div id="todoSummary" style="margin-top:12px;"></div>
         <div id="todoHistory"></div>
@@ -832,13 +832,34 @@ function recordLinkProgress(progressKey, label) {
 function getToday() { return new Date().toISOString().split('T')[0]; }
 function getTodoData() { return JSON.parse(localStorage.getItem('cjs_todos_v2') || '{}'); }
 function saveTodoData(d) { localStorage.setItem('cjs_todos_v2', JSON.stringify(d)); }
+
+// 每日固定模板（7条固定 + 5条空白）
+var TODO_TEMPLATE = [
+  { text: '墨墨背单词（20词）', done: false, fixed: true },
+  { text: '新概念第二册（每两天一课）', done: false, fixed: true },
+  { text: '语法（每天一课）', done: false, fixed: true },
+  { text: '新概念当天课文精听精读', done: false, fixed: true },
+  { text: "Let's learn English（两天一集）", done: false, fixed: true },
+  { text: '百词斩打卡', done: false, fixed: true },
+  { text: '每日公众号更新', done: false, fixed: true },
+  { text: '', done: false, fixed: false },
+  { text: '', done: false, fixed: false },
+  { text: '', done: false, fixed: false },
+  { text: '', done: false, fixed: false },
+  { text: '', done: false, fixed: false }
+];
+
+function cloneTemplate() {
+  return TODO_TEMPLATE.map(function(t) { return { text: t.text, done: false, fixed: t.fixed }; });
+}
+
 function getTodayTodos() {
   var today = getToday();
   var all = getTodoData();
-  if (!all[today]) all[today] = [
-    { text: '', done: false }, { text: '', done: false }, { text: '', done: false },
-    { text: '', done: false }, { text: '', done: false }, { text: '', done: false }
-  ];
+  if (!all[today]) {
+    all[today] = cloneTemplate();
+    saveTodoData(all);
+  }
   return all[today];
 }
 function saveTodayTodos(todos) {
@@ -854,7 +875,9 @@ function renderTodoList() {
   list.querySelectorAll('.todo-item').forEach(function(el){ el.remove(); });
   todos.forEach(function(t, i){
     var div = document.createElement('div'); div.className = 'todo-item';
-    div.innerHTML = '<div class="todo-check '+(t.done?'done':'')+'" onclick="toggleTodo('+i+')">✓</div><input class="todo-input-inline" id="todoText'+i+'" value="'+escapeHtml(t.text)+'" placeholder="输入计划…" onchange="updateTodoText('+i+')" onblur="updateTodoText('+i+')"><button class="todo-del" onclick="delTodo('+i+')">×</button>';
+    var lockIcon = t.fixed ? '<span style="font-size:10px;color:#ccc;margin-right:4px;cursor:default;" title="固定模板">📌</span>' : '';
+    var delBtn = t.fixed ? '' : '<button class="todo-del" onclick="delTodo('+i+')">×</button>';
+    div.innerHTML = '<div class="todo-check '+(t.done?'done':'')+'" onclick="toggleTodo('+i+')">✓</div>'+lockIcon+'<input class="todo-input-inline" id="todoText'+i+'" value="'+escapeHtml(t.text)+'" placeholder="输入计划…" onchange="updateTodoText('+i+')" onblur="updateTodoText('+i+')" '+(t.fixed?'readonly style="color:var(--text-dark);background:transparent;"':'')+'>'+delBtn;
     list.appendChild(div);
   });
   var hasText = todos.filter(function(t){ return t.text.trim(); }).length;
@@ -873,7 +896,7 @@ function addTodo() {
 function toggleTodo(i) { var todos = getTodayTodos(); todos[i].done = !todos[i].done; saveTodayTodos(todos); renderTodoList(); }
 function updateTodoText(i) { var el = document.getElementById('todoText'+i); if (!el) return; var todos = getTodayTodos(); todos[i].text = el.value; saveTodayTodos(todos); }
 function delTodo(i) { var todos = getTodayTodos(); todos.splice(i, 1); saveTodayTodos(todos); renderTodoList(); }
-function clearDone() { var todos = getTodayTodos().filter(function(t){ return !t.done; }); saveTodayTodos(todos); renderTodoList(); }
+function clearDone() { var todos = getTodayTodos(); todos.forEach(function(t){ t.done = false; }); saveTodayTodos(todos); renderTodoList(); }
 
 // 今日总结
 function renderTodoSummary() {
