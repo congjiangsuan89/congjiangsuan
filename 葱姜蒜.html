@@ -576,7 +576,7 @@
       </div>
 
       <!-- 学英语 -->
-      <div class="page" id="page-english" data-items='[{"icon":"📺","label":"正在进行","type":"link","url":"https://dict.eudic.net/ting/","progress":"english_progress_ongoing"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b","progress":"english_progress_6min"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/","progress":"english_progress_chinadaily"}]'>
+      <div class="page" id="page-english" data-items='[{"icon":"🐌","label":"VOA慢速英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=7d36e150-36e7-11e7-82c4-902b346f2ac5","progress":"english_progress_voa"},{"icon":"📻","label":"BBC新闻英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=71bf0051-ce57-4e4e-8ad0-ce054800b479","progress":"english_progress_bbc"},{"icon":"🎧","label":"6分钟英语","type":"link","url":"https://cn.eudic.net/ting/openChannel?id=5fd86372-ae9d-11e5-b2ce-000c29ffef9b","progress":"english_progress_6min"},{"icon":"📰","label":"China Daily","type":"link","url":"https://www.chinadaily.com.cn/","progress":"english_progress_chinadaily"}]'>
       </div>
 
       <!-- 读书笔记 -->
@@ -596,7 +596,7 @@
       </div>
 
       <!-- 睡前收听 -->
-      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/-1","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://xyzrank.top/","progress":"bedtime_xiaoyuzhou"},{"icon":"🎬","label":"值得看的视频","type":"link","url":"https://www.bilibili.com/v/popular/all","progress":"bedtime_video"}]'>
+      <div class="page" id="page-bedtime" data-items='[{"icon":"🌺","label":"岩中花述","type":"link","url":"https://www.xiaoyuzhoufm.com/podcast/625635587bfca4e73e990703","progress":"bedtime_yanzhong"},{"icon":"🎤","label":"鲁豫慢谈","type":"link","url":"https://space.bilibili.com/1479442448","progress":"bedtime_luyu"},{"icon":"🌅","label":"知乎Morning Call","type":"link","url":"https://www.zhihu.com/podcast/morning-call/-1","progress":"bedtime_morningcall"},{"icon":"🚀","label":"小宇宙推荐","type":"link","url":"https://xyzrank.top/","progress":"bedtime_xiaoyuzhou"},{"icon":"🎬","label":"值得看的视频","type":"link","url":"https://www.bilibili.com/v/popular/all","progress":"bedtime_video"},{"icon":"📝","label":"待看视频","type":"videolist","key":"video_todo"}]'>
       </div>
 
       <!-- 身体管理 -->
@@ -793,6 +793,8 @@ function toggleItem(key, idx) {
   } else if (item.type === 'note') {
     const saved = localStorage.getItem('cjs_note_' + item.key) || '';
     body.innerHTML = `<div class="local-wrap"><div class="note-hint">💡 内容自动保存在本地浏览器中</div><textarea class="note-textarea" id="noteArea_${item.key}" placeholder="开始记录…">${escapeHtml(saved)}</textarea><button class="note-save-btn" onclick="saveNote('${item.key}')">保存</button></div>`;
+  } else if (item.type === 'videolist') {
+    renderVideoTodoPanel(body, item.key);
   } else if (item.type === 'weight') {
     renderWeightPanel(body);
   } else if (item.type === 'diet') {
@@ -938,6 +940,79 @@ function renderTodoHistory() {
 
 function saveNote(key) { const area = document.getElementById('noteArea_' + key); if (area) localStorage.setItem('cjs_note_' + key, area.value); alert('已保存 ✓'); }
 function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+
+// ===== 待看视频（本地记录）=====
+function getVideoTodoList() { return JSON.parse(localStorage.getItem('cjs_video_todo') || '[]'); }
+function saveVideoTodoList(d) { localStorage.setItem('cjs_video_todo', JSON.stringify(d)); }
+function renderVideoTodoPanel(body, key) {
+  function refresh() {
+    var list = getVideoTodoList();
+    var html = '<div class="local-wrap" style="max-width:520px;margin:0 auto;">';
+    html += '<div class="note-hint">📝 记录想看但还没看的视频，看完后可标记或删除。数据保存在本地。</div>';
+    // 添加输入区
+    html += '<div style="display:flex;gap:8px;margin-bottom:16px;">';
+    html += '<input type="text" id="videoTodoTitle" placeholder="视频标题（必填）" style="flex:1;padding:10px 14px;border:1px solid #e8e0ef;border-radius:12px;font-size:14px;outline:none;background:var(--bg-card);color:var(--text-dark);" />';
+    html += '<input type="text" id="videoTodoUrl" placeholder="链接（可选）" style="flex:1;padding:10px 14px;border:1px solid #e8e0ef;border-radius:12px;font-size:14px;outline:none;background:var(--bg-card);color:var(--text-dark);" />';
+    html += '<button class="note-save-btn" style="white-space:nowrap;" onclick="addVideoTodo()">添加</button>';
+    html += '</div>';
+    // 列表
+    if (list.length === 0) {
+      html += '<div style="text-align:center;color:var(--text-muted);font-size:13px;padding:30px 0;">暂无记录，添加你想看的视频吧 🎬</div>';
+    } else {
+      html += '<div style="display:flex;flex-direction:column;gap:8px;">';
+      for (var i = 0; i < list.length; i++) {
+        var v = list[i];
+        var done = v.done;
+        var titleHtml = done ? '<span style="text-decoration:line-through;color:var(--text-muted);">' + escapeHtml(v.title) + '</span>' : escapeHtml(v.title);
+        var linkBtn = v.url ? ' <a href="' + escapeHtml(v.url) + '" target="_blank" style="color:var(--accent);font-size:12px;text-decoration:none;margin-left:6px;">▶ 打开</a>' : '';
+        var doneBtn = done
+          ? '<button onclick="toggleVideoTodo(' + i + ')" style="background:#f0e8f5;border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:#7c5cbf;">↩ 取消</button>'
+          : '<button onclick="toggleVideoTodo(' + i + ')" style="background:#e8f5e9;border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:#2e7d32;">✓ 看完</button>';
+        var delBtn = '<button onclick="deleteVideoTodo(' + i + ')" style="background:#fdecea;border:none;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;color:#c62828;">🗑 删除</button>';
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:12px 14px;background:var(--bg-card);border-radius:12px;border:1px solid #f0e8f5;">';
+        html += '<span style="font-size:18px;">' + (done ? '✅' : '🎬') + '</span>';
+        html += '<div style="flex:1;min-width:0;"><div style="font-size:14px;color:var(--text-dark);word-break:break-all;">' + titleHtml + linkBtn + '</div>';
+        if (v.url) html += '<div style="font-size:11px;color:#bbb;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(v.url) + '</div>';
+        html += '</div>';
+        html += '<div style="display:flex;gap:4px;flex-shrink:0;">' + doneBtn + delBtn + '</div>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    body.innerHTML = html;
+  }
+  refresh();
+  // 把 refresh 挂到 body 上供外部调用
+  body._refresh = refresh;
+}
+function addVideoTodo() {
+  var titleEl = document.getElementById('videoTodoTitle');
+  var urlEl = document.getElementById('videoTodoUrl');
+  var title = titleEl.value.trim();
+  var url = urlEl.value.trim();
+  if (!title) { titleEl.focus(); return; }
+  var list = getVideoTodoList();
+  list.unshift({ title: title, url: url, done: false, added: Date.now() });
+  saveVideoTodoList(list);
+  titleEl.value = ''; urlEl.value = '';
+  // 刷新面板
+  var panel = document.getElementById('detail-bedtime');
+  if (panel) { var body = panel.querySelector('.detail-body'); if (body && body._refresh) body._refresh(); }
+}
+function toggleVideoTodo(i) {
+  var list = getVideoTodoList();
+  if (list[i]) { list[i].done = !list[i].done; saveVideoTodoList(list); }
+  var panel = document.getElementById('detail-bedtime');
+  if (panel) { var body = panel.querySelector('.detail-body'); if (body && body._refresh) body._refresh(); }
+}
+function deleteVideoTodo(i) {
+  var list = getVideoTodoList();
+  list.splice(i, 1);
+  saveVideoTodoList(list);
+  var panel = document.getElementById('detail-bedtime');
+  if (panel) { var body = panel.querySelector('.detail-body'); if (body && body._refresh) body._refresh(); }
+}
 
 // ===== 体重记录 =====
 function getWeightData() { return JSON.parse(localStorage.getItem('cjs_weight') || '[]'); }
